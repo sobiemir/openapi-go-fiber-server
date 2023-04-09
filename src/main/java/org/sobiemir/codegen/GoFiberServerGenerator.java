@@ -1,36 +1,33 @@
 package org.sobiemir.codegen;
 
 import org.openapitools.codegen.*;
-import org.openapitools.codegen.languages.AbstractGoCodegen;
+import org.openapitools.codegen.api.TemplatingEngineAdapter;
 import org.openapitools.codegen.meta.GeneratorMetadata;
 import org.openapitools.codegen.meta.Stability;
 import org.openapitools.codegen.meta.features.*;
 import org.openapitools.codegen.model.ModelMap;
 import org.openapitools.codegen.model.OperationMap;
 import org.openapitools.codegen.model.OperationsMap;
+import org.openapitools.codegen.templating.HandlebarsEngineAdapter;
+import org.openapitools.codegen.utils.ModelUtils;
+
+import com.github.jknack.handlebars.internal.lang3.StringUtils;
+
+import io.swagger.v3.oas.models.media.Schema;
 
 import java.io.File;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
-public class GoFiberServerGenerator extends AbstractGoCodegen {
+import static org.openapitools.codegen.utils.StringUtils.camelize;
+
+public class GoFiberServerGenerator extends GoFiberServerBase {
     protected String apiVersion = "1.0.0";
     protected String projectName = "openapi-go-fiber-server";
     protected String sourceFolder = "";
     protected String apiFolder = "";
     protected String modelFolder = "";
-
-    public CodegenType getTag() {
-        return CodegenType.SERVER;
-    }
-
-    public String getName() {
-        return "go-fiber-server";
-    }
-
-    public String getHelp() {
-        return "Generates a go server files using fiber framework. (Experimental)";
-    }
 
     public GoFiberServerGenerator() {
         super();
@@ -56,97 +53,163 @@ public class GoFiberServerGenerator extends AbstractGoCodegen {
 
         outputFolder = "generated-code" + File.separator + "go-fiber-server";
 
-        modelTemplateFiles.put("model.mustache", ".go");
-        apiTemplateFiles.put("api.mustache", ".go");
+        apiTemplateFiles.put("api.hbs", ".go");
+        modelTemplateFiles.put("model.hbs", ".go");
 
         embeddedTemplateDir = templateDir = "go-fiber-server";
     }
 
     @Override
-    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
-        objs = super.postProcessOperationsWithModels(objs, allModels);
+    public CodegenType getTag() {
+        return CodegenType.SERVER;
+    }
 
-        OperationMap operations = objs.getOperations();
-        List<CodegenOperation> operationList = operations.getOperation();
-        for (CodegenOperation op : operationList) {
-            if (op.path != null) {
-                op.path = op.path.replaceAll("\\{(.*?)\\}", ":$1");
+    @Override
+    public String getName() {
+        return "go-fiber-server";
+    }
+
+    @Override
+    public String getHelp() {
+        return "Generates a go server files using fiber framework. (Experimental)";
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public CodegenProperty fromProperty(String name, Schema p, boolean required,
+            boolean schemaIsFromAdditionalProperties) {
+        CodegenProperty property = super.fromProperty(name, p, required, schemaIsFromAdditionalProperties);
+
+        if (property.isEnumRef && StringUtils.isNotBlank(property.getRef())) {
+            String simpleRef = ModelUtils.getSimpleRef(property.getRef());
+            Schema refSchema = ModelUtils.getSchema(openAPI, simpleRef);
+
+            if (StringUtils.isBlank(property.description)) {
+                property.setDescription(refSchema.getDescription());
+            }
+            if (refSchema.getDefault() != null) {
+                property.setDefaultValue(toDefaultValue(refSchema));
             }
         }
-        return objs;
+
+        return property;
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public String toDefaultValue(Schema p) {
+        boolean isBoolean = ModelUtils.isBooleanSchema(p);
+        boolean isNumber = ModelUtils.isNumberSchema(p);
+        boolean isInteger = ModelUtils.isIntegerSchema(p);
+        boolean isDate = ModelUtils.isDateSchema(p);
+        boolean isDateTime = ModelUtils.isDateTimeSchema(p);
+        boolean isString = ModelUtils.isStringSchema(p);
+
+        if (isBoolean || isNumber || isInteger) {
+            if (p.getDefault() != null) {
+                return p.getDefault().toString();
+            }
+        } else if (isDate || isDateTime || isString) {
+            if (p.getDefault() != null) {
+                return "\"" + p.getDefault().toString() + "\"";
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public String toEnumDefaultValue(String value, String datatype) {
+        if (enumClassPrefix) {
+            return datatype + value;
+        }
+        return value;
+    }
+
+    @Override
+    public String toEnumVarName(String name, String datatype) {
+        String varName = super.toEnumVarName(name, datatype);
+        return camelize(varName.toLowerCase());
+    }
+
+    @Override
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationMap operationMap = objs.getOperations();
+
+        operationMap.put("variableName", toParamName(operationMap.getPathPrefix()));
+
+        List<CodegenOperation> operations = operationMap.getOperation();
+
+        normalizeRouterData(operations);
+
+        List<Map<String, String>> imports = objs.getImports();
+        if (imports == null)
+            return objs;
+
+        removeModelImports(imports);
+
+        boolean addedTimeImport = false;
+        boolean addedOSImport = false;
+
+        for (CodegenOperation operation : operations) {
+            // import "os" if the operation uses files
+            if (!addedOSImport && "*os.File".equals(operation.returnType)) {
+                imports.add(createMapping("import", "os"));
+                addedOSImport = true;
+            }
+
+            for (CodegenParameter param : operation.allParams) {
+                // import "os" if the operation uses files
+                if (!addedOSImport && "*os.File".equals(param.dataType)) {
+                    imports.add(createMapping("import", "os"));
+                    addedOSImport = true;
+                }
+
+                // import "time" if the operation has a required time parameter.
+                if (param.required || !usesOptionals) {
+                    if (!addedTimeImport && "time.Time".equals(param.dataType)) {
+                        imports.add(createMapping("import", "time"));
+                        addedTimeImport = true;
+                    }
+                }
+
+                setExportParameterName(param);
+            }
+        }
+
+        return addRecursiveImports(objs, imports);
     }
 
     @Override
     public void processOpts() {
+        setLegacyDiscriminatorBehavior(false);
+
         super.processOpts();
 
-        this.sourceFolder = getAndUseAdditionalProperty(CodegenConstants.SOURCE_FOLDER, "src");
-        this.apiFolder = getAndUseAdditionalProperty(GoFiberServerConstants.API_FOLDER, "");
-        this.modelFolder = getAndUseAdditionalProperty(GoFiberServerConstants.MODEL_FOLDER, "");
-        this.packageName = getAndUseAdditionalProperty(CodegenConstants.PACKAGE_NAME, "openapi");
-        this.modelPackage = getAndUseAdditionalProperty(CodegenConstants.MODEL_PACKAGE, packageName);
-        this.apiPackage = getAndUseAdditionalProperty(CodegenConstants.API_PACKAGE, packageName);
+        sourceFolder = getAndUseAdditionalProperty(CodegenConstants.SOURCE_FOLDER, "src");
+        apiFolder = getAndUseAdditionalProperty(GoFiberServerConstants.API_FOLDER, "");
+        modelFolder = getAndUseAdditionalProperty(GoFiberServerConstants.MODEL_FOLDER, "");
+        packageName = getAndUseAdditionalProperty(CodegenConstants.PACKAGE_NAME, "openapi");
+        modelPackage = getAndUseAdditionalProperty(CodegenConstants.MODEL_PACKAGE, packageName);
+        apiPackage = getAndUseAdditionalProperty(CodegenConstants.API_PACKAGE, packageName);
+        enumClassPrefix = getAndUseAdditionalProperty(CodegenConstants.ENUM_CLASS_PREFIX, true);
 
-        // /*
-        // * Additional Properties. These values can be passed to the templates and
-        // * are available in models, apis, and supporting files
-        // */
-        // if (additionalProperties.containsKey("apiVersion")) {
-        // this.apiVersion = (String) additionalProperties.get("apiVersion");
-        // } else {
-        // additionalProperties.put("apiVersion", apiVersion);
-        // }
+        TemplatingEngineAdapter templatingEngine = getTemplatingEngine();
+        if (!(templatingEngine instanceof HandlebarsEngineAdapter)) {
+            throw new RuntimeException("Only the HandlebarsEngineAdapter is supported for this generator");
+        }
 
-        // if (additionalProperties.containsKey(CodegenConstants.ENUM_CLASS_PREFIX)) {
-        // setEnumClassPrefix(
-        // Boolean.parseBoolean(additionalProperties.get(CodegenConstants.ENUM_CLASS_PREFIX).toString()));
-        // if (enumClassPrefix) {
-        // additionalProperties.put(CodegenConstants.ENUM_CLASS_PREFIX, true);
-        // }
-        // }
-
-        /*
-         * set model and package names, this is mainly used inside the templates.
-         */
-        // modelPackage = MODEL_PACKAGE_NAME;
-        // apiPackage = API_PACKAGE_NAME;
-
-        /*
-         * Supporting Files. You can write single files for the generator with the
-         * entire object tree available. If the input file has a suffix of `.mustache
-         * it will be processed by the template engine. Otherwise, it will be copied
-         */
-        // supportingFiles.add(new SupportingFile("openapi.mustache", ".docs/api",
-        // "openapi.yaml"));
-        // supportingFiles.add(new SupportingFile("hello-world.mustache", "models",
-        // "hello-world.go"));
-        // supportingFiles.add(new SupportingFile("go-mod.mustache", "", "go.mod"));
-        // supportingFiles.add(new SupportingFile("handler-container.mustache",
-        // "handlers", "container.go"));
-        // supportingFiles.add(new SupportingFile("main.mustache", "", "main.go"));
-        // supportingFiles.add(new SupportingFile("Dockerfile.mustache", "",
-        // "Dockerfile"));
-        // supportingFiles.add(new SupportingFile("README.mustache", "", "README.md")
-        // .doNotOverwrite());
+        supportingFiles.add(new SupportingFile("api-container.hbs",
+                sourceFolder, "api.go"));
     }
 
     @Override
     public String apiFileFolder() {
-        return outputFolder + File.separator + this.sourceFolder + File.separator + this.apiFolder;
+        return outputFolder + File.separator + sourceFolder + File.separator + apiFolder;
     }
 
     @Override
     public String modelFileFolder() {
-        return outputFolder + File.separator + this.sourceFolder + File.separator + this.modelFolder;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T getAndUseAdditionalProperty(String propertyName, T defaultValue) {
-        if (additionalProperties.containsKey(propertyName)) {
-            return (T) additionalProperties.get(propertyName);
-        } else {
-            additionalProperties.put(propertyName, defaultValue);
-        }
-        return defaultValue;
+        return outputFolder + File.separator + sourceFolder + File.separator + modelFolder;
     }
 }
