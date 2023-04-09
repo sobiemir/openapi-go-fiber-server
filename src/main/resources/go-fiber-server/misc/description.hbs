@@ -14,7 +14,14 @@
 	{{~#or this.notes this.summary }}
 		{{~>misc/nl n=1}}
 	{{~/or}}
-	{{~>misc/tab n=tab}}// {{{this.description}}}
+	{{~#if this.vendorExtensions.x-exploded-description}}
+		{{~#each this.vendorExtensions.x-exploded-description}}
+			{{~>misc/tab n=tab}}// {{{this}}}
+			{{~#not @last}}{{~>misc/nl n=1}}{{/not}}
+		{{~/each}}
+	{{~else}}
+		{{~>misc/tab n=tab}}// {{{this.description}}}
+	{{~/if}}
 {{~/if}}
 {{~#or this.isDeprecated this.deprecated}}
 	{{~#or this.notes this.summary this.description}}

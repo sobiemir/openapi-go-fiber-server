@@ -1,6 +1,6 @@
 {{~#*inline "routing_entry"}}
 	{{~#each operations.operation}}
-	app.{{httpMethod}}("{{{basePathWithoutHost}}}{{{path}}}", {{variableName}}.{{operationId}})
+	app.{{httpMethod}}("{{{basePathWithoutHost}}}{{{path}}}", {{varname}}.{{operationId}})
 	{{~/each}}
 {{~/inline~}}
 
@@ -10,9 +10,9 @@ import "github.com/gofiber/fiber/v2"
 
 func RegisterApiRouting(app *fiber.App) {
 {{~#each apiInfo.apis}}
-	{{operations.variableName}} := {{operations.variableName}}Controller{}
+	{{operations.varname}} := {{operations.varname}}Controller{}
 {{~/each}}
 {{#each apiInfo.apis}}
-	{{~>routing_entry variableName=operations.variableName}}
+	{{~>routing_entry varname=operations.varname}}
 {{~/each}}
 }

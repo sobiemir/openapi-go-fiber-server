@@ -11,16 +11,12 @@ import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.templating.HandlebarsEngineAdapter;
 import org.openapitools.codegen.utils.ModelUtils;
 
-import com.github.jknack.handlebars.internal.lang3.StringUtils;
-
 import io.swagger.v3.oas.models.media.Schema;
 
 import java.io.File;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-
-import static org.openapitools.codegen.utils.StringUtils.camelize;
 
 public class GoFiberServerGenerator extends GoFiberServerBase {
     protected String apiVersion = "1.0.0";
@@ -32,13 +28,15 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
     public GoFiberServerGenerator() {
         super();
 
-        generatorMetadata = GeneratorMetadata.newBuilder(generatorMetadata)
+        this.generatorMetadata = GeneratorMetadata.newBuilder(this.generatorMetadata)
                 .stability(Stability.EXPERIMENTAL)
                 .build();
 
-        modifyFeatureSet(features -> features
+        this.modifyFeatureSet(features -> features
                 .includeDocumentationFeatures(DocumentationFeature.Readme)
-                .wireFormatFeatures(EnumSet.of(WireFormatFeature.JSON, WireFormatFeature.XML))
+                .wireFormatFeatures(EnumSet.of(
+                        WireFormatFeature.JSON,
+                        WireFormatFeature.XML))
                 .securityFeatures(EnumSet.noneOf(
                         SecurityFeature.class))
                 .excludeGlobalFeatures(
@@ -51,12 +49,12 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
                 .excludeParameterFeatures(
                         ParameterFeature.Cookie));
 
-        outputFolder = "generated-code" + File.separator + "go-fiber-server";
+        this.outputFolder = "generated-code" + File.separator + "go-fiber-server";
 
-        apiTemplateFiles.put("api.hbs", ".go");
-        modelTemplateFiles.put("model.hbs", ".go");
+        this.apiTemplateFiles.put("api.hbs", ".go");
+        this.modelTemplateFiles.put("model.hbs", ".go");
 
-        embeddedTemplateDir = templateDir = "go-fiber-server";
+        this.embeddedTemplateDir = this.templateDir = "go-fiber-server";
     }
 
     @Override
@@ -76,20 +74,27 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
 
     @Override
     @SuppressWarnings("rawtypes")
-    public CodegenProperty fromProperty(String name, Schema p, boolean required,
-            boolean schemaIsFromAdditionalProperties) {
-        CodegenProperty property = super.fromProperty(name, p, required, schemaIsFromAdditionalProperties);
+    public CodegenProperty fromProperty(String name, Schema p, boolean required, boolean isFromAdditionalProperties) {
+        CodegenProperty property = super.fromProperty(name, p, required, isFromAdditionalProperties);
+        String propertyRef = property.getRef();
 
-        if (property.isEnumRef && StringUtils.isNotBlank(property.getRef())) {
-            String simpleRef = ModelUtils.getSimpleRef(property.getRef());
-            Schema refSchema = ModelUtils.getSchema(openAPI, simpleRef);
+        if (property.isEnumRef && !StringExtensions.isNullOrWhiteSpace(propertyRef)) {
+            String simpleRef = ModelUtils.getSimpleRef(propertyRef);
+            Schema refSchema = ModelUtils.getSchema(this.openAPI, simpleRef);
 
-            if (StringUtils.isBlank(property.description)) {
-                property.setDescription(refSchema.getDescription());
+            if (StringExtensions.isNullOrWhiteSpace(property.description)) {
+                property.description = this.escapeText(refSchema.getDescription());
+                property.unescapedDescription = refSchema.getDescription();
             }
             if (refSchema.getDefault() != null) {
-                property.setDefaultValue(toDefaultValue(refSchema));
+                property.defaultValue = this.toDefaultValue(refSchema);
             }
+        }
+
+        if (!StringExtensions.isNullOrWhiteSpace(property.unescapedDescription)) {
+            property.vendorExtensions.put(
+                    VendorConstants.X_EXPLODED_DESCRIPTION,
+                    StringExtensions.lines(property.unescapedDescription));
         }
 
         return property;
@@ -98,18 +103,11 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
     @Override
     @SuppressWarnings("rawtypes")
     public String toDefaultValue(Schema p) {
-        boolean isBoolean = ModelUtils.isBooleanSchema(p);
-        boolean isNumber = ModelUtils.isNumberSchema(p);
-        boolean isInteger = ModelUtils.isIntegerSchema(p);
-        boolean isDate = ModelUtils.isDateSchema(p);
-        boolean isDateTime = ModelUtils.isDateTimeSchema(p);
-        boolean isString = ModelUtils.isStringSchema(p);
-
-        if (isBoolean || isNumber || isInteger) {
+        if (ModelUtils.isBooleanSchema(p) || ModelUtils.isNumberSchema(p) || ModelUtils.isIntegerSchema(p)) {
             if (p.getDefault() != null) {
                 return p.getDefault().toString();
             }
-        } else if (isDate || isDateTime || isString) {
+        } else if (ModelUtils.isDateSchema(p) || ModelUtils.isDateTimeSchema(p) || ModelUtils.isStringSchema(p)) {
             if (p.getDefault() != null) {
                 return "\"" + p.getDefault().toString() + "\"";
             }
@@ -120,7 +118,7 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
 
     @Override
     public String toEnumDefaultValue(String value, String datatype) {
-        if (enumClassPrefix) {
+        if (this.enumClassPrefix) {
             return datatype + value;
         }
         return value;
@@ -129,24 +127,24 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
     @Override
     public String toEnumVarName(String name, String datatype) {
         String varName = super.toEnumVarName(name, datatype);
-        return camelize(varName.toLowerCase());
+        return StringExtensions.camelize(varName.toLowerCase());
     }
 
     @Override
     public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
         OperationMap operationMap = objs.getOperations();
 
-        operationMap.put("variableName", toParamName(operationMap.getPathPrefix()));
+        operationMap.put("varname", this.toParamName(operationMap.getPathPrefix()));
 
         List<CodegenOperation> operations = operationMap.getOperation();
 
-        normalizeRouterData(operations);
+        this.normalizeRouterData(operations);
 
         List<Map<String, String>> imports = objs.getImports();
         if (imports == null)
             return objs;
 
-        removeModelImports(imports);
+        this.removeModelImports(imports);
 
         boolean addedTimeImport = false;
         boolean addedOSImport = false;
@@ -173,43 +171,43 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
                     }
                 }
 
-                setExportParameterName(param);
+                this.setExportParameterName(param);
             }
         }
 
-        return addRecursiveImports(objs, imports);
+        return this.addRecursiveImports(objs, imports);
     }
 
     @Override
     public void processOpts() {
-        setLegacyDiscriminatorBehavior(false);
+        this.setLegacyDiscriminatorBehavior(false);
 
         super.processOpts();
 
-        sourceFolder = getAndUseAdditionalProperty(CodegenConstants.SOURCE_FOLDER, "src");
-        apiFolder = getAndUseAdditionalProperty(GoFiberServerConstants.API_FOLDER, "");
-        modelFolder = getAndUseAdditionalProperty(GoFiberServerConstants.MODEL_FOLDER, "");
-        packageName = getAndUseAdditionalProperty(CodegenConstants.PACKAGE_NAME, "openapi");
-        modelPackage = getAndUseAdditionalProperty(CodegenConstants.MODEL_PACKAGE, packageName);
-        apiPackage = getAndUseAdditionalProperty(CodegenConstants.API_PACKAGE, packageName);
-        enumClassPrefix = getAndUseAdditionalProperty(CodegenConstants.ENUM_CLASS_PREFIX, true);
+        this.sourceFolder = this.getAndUseAdditionalProperty(CodegenConstants.SOURCE_FOLDER, "src");
+        this.apiFolder = this.getAndUseAdditionalProperty(OptionsConstants.API_FOLDER, "");
+        this.modelFolder = this.getAndUseAdditionalProperty(OptionsConstants.MODEL_FOLDER, "");
+        this.packageName = this.getAndUseAdditionalProperty(CodegenConstants.PACKAGE_NAME, "openapi");
+        this.modelPackage = this.getAndUseAdditionalProperty(CodegenConstants.MODEL_PACKAGE, packageName);
+        this.apiPackage = this.getAndUseAdditionalProperty(CodegenConstants.API_PACKAGE, packageName);
+        this.enumClassPrefix = this.getAndUseAdditionalProperty(CodegenConstants.ENUM_CLASS_PREFIX, true);
 
-        TemplatingEngineAdapter templatingEngine = getTemplatingEngine();
+        TemplatingEngineAdapter templatingEngine = this.getTemplatingEngine();
         if (!(templatingEngine instanceof HandlebarsEngineAdapter)) {
             throw new RuntimeException("Only the HandlebarsEngineAdapter is supported for this generator");
         }
 
-        supportingFiles.add(new SupportingFile("api-container.hbs",
-                sourceFolder, "api.go"));
+        this.supportingFiles.add(new SupportingFile("api-container.hbs",
+                this.sourceFolder, "api.go"));
     }
 
     @Override
     public String apiFileFolder() {
-        return outputFolder + File.separator + sourceFolder + File.separator + apiFolder;
+        return this.outputFolder + File.separator + this.sourceFolder + File.separator + this.apiFolder;
     }
 
     @Override
     public String modelFileFolder() {
-        return outputFolder + File.separator + sourceFolder + File.separator + modelFolder;
+        return this.outputFolder + File.separator + this.sourceFolder + File.separator + this.modelFolder;
     }
 }
