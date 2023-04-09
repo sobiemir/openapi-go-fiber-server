@@ -1,0 +1,9 @@
+type {{classname}} {{>misc/data_type}}
+
+// List of options for {{classname}} enum
+const (
+{{~#each allowableValues.enumVars}}
+	{{~>misc/nl n=1}}
+	{{~>model/enum_property}}
+{{~/each}}
+)

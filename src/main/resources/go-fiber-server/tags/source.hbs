@@ -1,0 +1,11 @@
+{{~#if isPathParam~}}
+	param:"{{paramName}}"
+{{~else if isHeaderParam~}}
+	header:"{{paramName}}"
+{{~else if isQueryParam~}}
+	query:"{{paramName}}"
+{{~else if isBodyParam~}}
+	json:"{{paramName}}"
+{{~else if isFormParam~}}
+	form:"{{paramName}}"
+{{~/if~}}

@@ -8,5 +8,10 @@ indent_size = 2
 charset = utf-8
 trim_trailing_whitespace = true
 
+[*.hbs]
+indent_size = 4
+indent_style = tab
+insert_final_newline = unset
+
 [*.java]
 indent_size = 4

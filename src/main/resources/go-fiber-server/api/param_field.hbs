@@ -1,0 +1,16 @@
+{{~#*inline "param_props"}}
+	{{~>misc/data_type}} `{{>tags/source}} {{>tags/validate}}`
+{{~/inline}}
+
+{{~#if this}}
+	{{~#each this}}
+		{{~>misc/description tab=1 snl=1}}
+		{{~>misc/nl n=1}}
+		{{~>misc/tab n=1}}
+		{{~#if vendorExtensions.x-export-param-name}}
+			{{~vendorExtensions.x-export-param-name}} {{>param_props}}
+		{{~else}}
+			{{~schema.name}} {{>param_props}}
+		{{~/if}}
+	{{~/each}}
+{{~/if}}

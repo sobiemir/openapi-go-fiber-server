@@ -1,0 +1,5 @@
+type {{classname}} struct {
+{{~#each vars}}
+	{{~>model/struct_property}}
+{{~/each}}
+}

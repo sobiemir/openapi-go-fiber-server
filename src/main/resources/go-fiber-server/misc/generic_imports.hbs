@@ -1,0 +1,11 @@
+{{#each imports}}
+	{{~#and @first bare}}
+		{{~>misc/nl n=snl}}
+import (
+	{{~/and}}
+	"{{import}}"
+	{{~#and @last bare}}
+)
+		{{~>misc/nl n=enl}}
+	{{~/and}}
+{{~/each}}

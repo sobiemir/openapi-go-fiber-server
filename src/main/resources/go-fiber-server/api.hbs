@@ -1,0 +1,19 @@
+package {{apiPackage}}
+
+import (
+	"github.com/gofiber/fiber/v2"
+	{{~>misc/generic_imports}}
+)
+
+type {{operations.variableName}}Controller struct {
+}
+
+{{#each operations.operation}}
+	{{~>misc/description enl=1~}}
+func (api *{{operations.variableName}}Controller) {{operationId}}(ctx *fiber.Ctx) error {
+	return ctx.JSON("Hello from Fiber!")
+}
+	{{~#not @last}}
+		{{~>misc/nl n=1}}
+	{{~/not}}
+{{/each}}

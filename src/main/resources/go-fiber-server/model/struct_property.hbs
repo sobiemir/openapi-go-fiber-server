@@ -1,0 +1,9 @@
+{{#if @first~}}
+	{{>misc/nl n=1~}}
+{{else~}}
+	{{>misc/nl n=2~}}
+{{/if}}
+
+{{~>misc/description tab=1 enl=1}}
+{{~>misc/tab n=1~}}
+{{name}} {{>misc/data_type}} `{{>tags/json}} {{>tags/validate}}`

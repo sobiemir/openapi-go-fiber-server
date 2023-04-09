@@ -1,0 +1,12 @@
+{{!-- {{~#if allParams~}}
+type {{operationId}}ReqBody struct {
+	{{~#with pathParams}}{{>api/param_field section="Path"}}{{/with~}}
+	{{~#with queryParams}}{{>api/param_field section="Query"}}{{/with~}}
+	{{~#with headerParams}}{{>api/param_field section="Header"}}{{/with~}}
+	{{~#with formParams}}{{>api/param_field section="Form"}}{{/with~}}
+	{{~#with bodyParams}}{{>api/param_field section="Body"}}{{/with~}}
+
+	{{~>misc/nl n=1~}}
+}
+{{~>misc/nl n=2}}
+{{~/if}} --}}

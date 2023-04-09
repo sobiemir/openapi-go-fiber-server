@@ -1,0 +1,43 @@
+validate:"
+{{~#if required~}}
+	required
+{{~else~}}
+	omitempty
+{{~/if~}}
+{{#if isNumeric~}}
+	{{#if minimum~}}
+		{{#if exclusiveMinimum}},gt{{else}},gte{{/if}}={{minimum~}}
+	{{/if~}}
+	{{#if maximum~}}
+		{{#if exclusiveMaximum}},lt{{else}},lte{{/if}}={{maximum~}}
+	{{/if~}}
+{{/if~}}
+{{#if isInteger~}}
+	{{#if multipleOf~}}
+		,multipleof={{multipleOf~}}
+	{{/if~}}
+{{/if~}}
+{{#if isEnum~}}
+	,oneof=
+	{{~#each allowableValues.values~}}
+		{{#not @first}} {{/not}}{{this}}
+	{{~/each~}}
+{{/if~}}
+{{#if isString~}}
+	{{#if minLength~}}
+		,min={{minLength~}}
+	{{/if~}}
+	{{#if maxLength~}}
+		,max={{maxLength~}}
+	{{/if~}}
+	{{#if dataFormat~}}
+		,{{dataFormat~}}
+	{{/if~}}
+	{{#if pattern~}}
+		,regex={{pattern~}}
+	{{/if~}}
+{{/if~}}
+{{~#if isDate~}}
+	,date
+{{~/if~}}
+"

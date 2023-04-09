@@ -1,0 +1,27 @@
+{{~#or this.notes this.summary this.description this.isDeprecated this.deprecated}}
+	{{~>misc/nl n=snl}}
+{{~/or}}
+{{~#if this.summary}}
+	{{~>misc/tab n=tab}}// {{{this.summary}}}
+{{~/if}}
+{{~#if this.notes}}
+	{{~#or this.summary }}
+		{{~>misc/nl n=1}}
+	{{~/or}}
+	{{~>misc/tab n=tab}}// {{{this.notes}}}
+{{~/if}}
+{{~#if this.description}}
+	{{~#or this.notes this.summary }}
+		{{~>misc/nl n=1}}
+	{{~/or}}
+	{{~>misc/tab n=tab}}// {{{this.description}}}
+{{~/if}}
+{{~#or this.isDeprecated this.deprecated}}
+	{{~#or this.notes this.summary this.description}}
+		{{~>misc/nl n=1}}
+	{{~/or}}
+	{{~>misc/tab n=tab}}// Deprecated
+{{~/or}}
+{{~#or this.notes this.summary this.description this.isDeprecated this.deprecated}}
+	{{~>misc/nl n=enl}}
+{{~/or}}
