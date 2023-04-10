@@ -1,3 +1,9 @@
+{{~#*inline "funct_params"}}
+	{{~#or headerParams queryParams pathParams~}}
+	, params
+	{{~/or}}
+{{~/inline~}}
+
 package {{apiPackage}}
 
 import (
@@ -6,9 +12,17 @@ import (
 )
 
 {{#each operations.operation}}
+	{{~>api/param_struct}}
+
 	{{~>misc/description enl=1~}}
 func (api *apiContainer) {{operationId}}(ctx *fiber.Ctx) error {
-	return api.impl.{{operationId}}(ctx)
+	{{~#or headerParams queryParams pathParams}}
+	params := &{{operationId}}_Params{}
+	{{~/or}}
+	{{~#if pathParams}}
+	ctx.ParamsParser(params)
+	{{~/if}}
+	return api.impl.{{operationId}}(ctx {{~>funct_params}})
 }
 	{{~#not @last}}
 		{{~>misc/nl n=1}}

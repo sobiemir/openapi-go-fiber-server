@@ -1,3 +1,9 @@
+{{~#*inline "impl_params"}}
+	{{~#or headerParams queryParams pathParams~}}
+	, params *{{operationId}}_Params
+	{{~/or}}
+{{~/inline~}}
+
 package {{packageName}}
 
 import "github.com/gofiber/fiber/v2"
@@ -20,7 +26,7 @@ func RegisterApiRouting(app *fiber.App, impl ApiImplementer) {
 type ApiImplementer interface {
 {{~#each apiInfo.apis}}
 	{{~#each operations.operation}}
-	{{operationId}}(ctx *fiber.Ctx) error
+	{{operationId}}(ctx *fiber.Ctx {{~>impl_params}}) error
 	{{~/each}}
 {{~/each}}
 }

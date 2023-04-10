@@ -1,7 +1,7 @@
 {{~#if isPathParam~}}
-	param:"{{paramName}}"
+	params:"{{paramName}}"
 {{~else if isHeaderParam~}}
-	header:"{{paramName}}"
+	reqHeader:"{{paramName}}"
 {{~else if isQueryParam~}}
 	query:"{{paramName}}"
 {{~else if isBodyParam~}}

@@ -120,7 +120,7 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
     @Override
     public String toEnumDefaultValue(String value, String datatype) {
         if (this.enumClassPrefix) {
-            return datatype + value;
+            return datatype + "_" + value;
         }
         return value;
     }

@@ -2,7 +2,7 @@
 	{{~>misc/data_type}} `{{>tags/source}} {{>tags/validate}}`
 {{~/inline}}
 {{~#or pathParams queryParams headerParams~}}
-type {{operationId}}Params struct {
+type {{operationId}}_Params struct {
 	{{~#with pathParams}}{{>api/param_field}}{{/with~}}
 	{{~#with queryParams}}{{>api/param_field}}{{/with~}}
 	{{~#with headerParams}}{{>api/param_field}}{{/with~}}
