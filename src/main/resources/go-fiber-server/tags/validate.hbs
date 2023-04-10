@@ -40,4 +40,7 @@ validate:"
 {{~#if isDate~}}
 	,date
 {{~/if~}}
+{{~#or isArray isMap~}}
+	,dive
+{{~/or~}}
 "
