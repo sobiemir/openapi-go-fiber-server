@@ -13,7 +13,7 @@ public class StringExtensions {
         }
 
         for (int index = 0; index < value.length(); ++index) {
-            if (Character.isWhitespace(value.charAt(index))) {
+            if (!Character.isWhitespace(value.charAt(index))) {
                 return false;
             }
         }
