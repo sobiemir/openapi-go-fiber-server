@@ -86,6 +86,7 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
                 property.description = this.escapeText(refSchema.getDescription());
                 property.unescapedDescription = refSchema.getDescription();
             }
+
             if (refSchema.getDefault() != null) {
                 property.defaultValue = this.toDefaultValue(refSchema);
             }
@@ -133,9 +134,6 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
     @Override
     public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
         OperationMap operationMap = objs.getOperations();
-
-        operationMap.put("varname", this.toParamName(operationMap.getPathPrefix()));
-
         List<CodegenOperation> operations = operationMap.getOperation();
 
         this.normalizeRouterData(operations);
@@ -197,8 +195,11 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
             throw new RuntimeException("Only the HandlebarsEngineAdapter is supported for this generator");
         }
 
-        this.supportingFiles.add(new SupportingFile("api-container.hbs",
-                this.sourceFolder, "api.go"));
+        SupportingFile apiImpl = new SupportingFile("api-impl.hbs", this.sourceFolder, "api.go");
+        SupportingFile modelImpl = new SupportingFile("model-impl.hbs", this.sourceFolder, "model.go");
+
+        this.supportingFiles.add(apiImpl);
+        this.supportingFiles.add(modelImpl);
     }
 
     @Override

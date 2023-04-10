@@ -1,0 +1,26 @@
+package {{packageName}}
+
+import "github.com/gofiber/fiber/v2"
+
+type apiContainer struct {
+	impl ApiImplementer
+}
+
+func RegisterApiRouting(app *fiber.App, impl ApiImplementer) {
+	api := &apiContainer{
+		impl: impl,
+	}
+{{#each apiInfo.apis}}
+	{{~#each operations.operation}}
+	app.{{httpMethod}}("{{{basePathWithoutHost}}}{{{path}}}", api.{{operationId}})
+	{{~/each}}
+{{~/each}}
+}
+
+type ApiImplementer interface {
+{{~#each apiInfo.apis}}
+	{{~#each operations.operation}}
+	{{operationId}}(ctx *fiber.Ctx) error
+	{{~/each}}
+{{~/each}}
+}

@@ -17,12 +17,12 @@ validate:"
 		,multipleof={{multipleOf~}}
 	{{/if~}}
 {{/if~}}
-{{#if isEnum~}}
+{{#or isEnum isEnumRef~}}
 	,oneof=
 	{{~#each allowableValues.values~}}
 		{{#not @first}} {{/not}}{{this}}
 	{{~/each~}}
-{{/if~}}
+{{/or~}}
 {{#if isString~}}
 	{{#if minLength~}}
 		,min={{minLength~}}

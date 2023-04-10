@@ -1,20 +1,3 @@
-{{!--
-Handlebars template for models.
-
-Default values are disabled because they are not working correctly.
-What does not work:
-	- $ref to enum and override example / description / default
-	  quick fix - allOf.
-	- $ref to enum and data inside the enum (default / example / descriptin) - should it work?
-	  quick fix - allOf.
-	- enum properties must be written this way: enum_prop or enumprop or ENUM_PROP or ENUMPROP
-	  otherwise it will add _ for definition when there will be different cases.
-Enum names should also have _, maybe add "underscore" function to handlebars engine?
-
-The current solution is:
-
-
-~--}}
 package {{modelPackage}}
 {{#each models}}
 	{{~>misc/generic_imports bare=1 enl=1}}
@@ -28,12 +11,12 @@ package {{modelPackage}}
 		{{~else}}
 			{{~>model/struct}}
 
-func New{{classname}}() {{classname}} {
-	return {{classname}} {
+func (mdl *{{classname}}) setDefaultValues() {
 			{{~#each vars}}
-		{{~>model/struct_default}}
+				{{~#if defaultValue}}
+	mdl.{{name}} = {{{defaultValue}}}
+				{{~/if~}}
 			{{~/each}}
-	}
 }
 		{{~/if}}
 	{{~/with}}

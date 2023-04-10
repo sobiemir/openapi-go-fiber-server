@@ -1,0 +1,9 @@
+package {{modelPackage}}
+
+type modelImpl interface {
+	setDefaultValues()
+}
+
+func SetDefaultValues(model modelImpl) {
+	model.setDefaultValues()
+}

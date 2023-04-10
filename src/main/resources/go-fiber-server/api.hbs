@@ -5,13 +5,10 @@ import (
 	{{~>misc/generic_imports}}
 )
 
-type {{operations.variableName}}Controller struct {
-}
-
 {{#each operations.operation}}
 	{{~>misc/description enl=1~}}
-func (api *{{operations.variableName}}Controller) {{operationId}}(ctx *fiber.Ctx) error {
-	return ctx.JSON("Hello from Fiber!")
+func (api *apiContainer) {{operationId}}(ctx *fiber.Ctx) error {
+	return api.impl.{{operationId}}(ctx)
 }
 	{{~#not @last}}
 		{{~>misc/nl n=1}}
