@@ -197,9 +197,11 @@ public class GoFiberServerGenerator extends GoFiberServerBase {
 
         SupportingFile apiImpl = new SupportingFile("api-impl.hbs", this.sourceFolder, "api.go");
         SupportingFile modelImpl = new SupportingFile("model-impl.hbs", this.sourceFolder, "model.go");
+        SupportingFile validators = new SupportingFile("validators.hbs", this.sourceFolder, "validators.go");
 
         this.supportingFiles.add(apiImpl);
         this.supportingFiles.add(modelImpl);
+        this.supportingFiles.add(validators);
     }
 
     @Override

@@ -18,10 +18,19 @@ import (
 func (api *apiContainer) {{operationId}}(ctx *fiber.Ctx) error {
 	{{~#or headerParams queryParams pathParams}}
 	params := &{{operationId}}_Params{}
+	SetDefaultValues(params)
+		{{~>misc/nl n=1}}
 	{{~/or}}
 	{{~#if pathParams}}
 	ctx.ParamsParser(params)
 	{{~/if}}
+	{{~#or headerParams queryParams pathParams}}
+		{{~>misc/nl n=1}}
+	if err := ValidateModel(params); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+		{{~>misc/nl n=1}}
+	{{~/or}}
 	return api.impl.{{operationId}}(ctx {{~>funct_params}})
 }
 	{{~#not @last}}

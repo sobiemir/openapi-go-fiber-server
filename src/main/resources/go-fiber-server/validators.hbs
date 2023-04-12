@@ -1,0 +1,88 @@
+package {{packageName}}
+
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"regexp"
+	"strings"
+	"time"
+	"github.com/go-playground/validator/v10"
+)
+
+func RegisterMissingValidators(v *validator.Validate) {
+	v.RegisterValidation("multipleof", isMultipleOf)
+	v.RegisterValidation("date-time", isISO8601DateTime)
+	v.RegisterValidation("date", isISO8601Date)
+	v.RegisterValidation("time", isISO8601Time)
+	v.RegisterValidation("regex", isRegexMatch)
+}
+
+var isISO8601DateTime validator.Func = func(fl validator.FieldLevel) bool {
+	param := "2006-01-02T15:04:05Z07:00"
+	return isCorrectDate(fl, param)
+}
+
+var isISO8601Date validator.Func = func(fl validator.FieldLevel) bool {
+	param := "2006-01-02"
+	return isCorrectDate(fl, param)
+}
+
+var isISO8601Time validator.Func = func(fl validator.FieldLevel) bool {
+	param := "15:04:05Z07:00"
+	return isCorrectDate(fl, param)
+}
+
+func isCorrectDate(fl validator.FieldLevel, param string) bool {
+	field := fl.Field()
+
+	if field.Kind() == reflect.String {
+		_, err := time.Parse(param, field.String())
+
+		return err == nil
+	}
+
+	return validatorPanicOnInvalidType(field)
+}
+
+var isMultipleOf validator.Func = func(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	param := fl.Param()
+
+	switch field.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		p, err := strconv.ParseUint(param, 0, 64)
+		validatorPanicOnError(err)
+		return field.Int()%int64(p) == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		p, err := strconv.ParseUint(param, 0, 64)
+		validatorPanicOnError(err)
+		return field.Uint()%p == 0
+	}
+
+	return validatorPanicOnInvalidType(field)
+}
+
+var isRegexMatch validator.Func = func(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	param := fl.Param()
+
+	if field.Kind() == reflect.String {
+		param = strings.TrimPrefix(param, "/")
+		param = strings.TrimSuffix(param, "/")
+		re := regexp.MustCompile(param)
+		return re.MatchString(field.String())
+	}
+
+	return validatorPanicOnInvalidType(field)
+}
+
+func validatorPanicOnInvalidType(field reflect.Value) bool {
+	panic(fmt.Sprintf("Bad field type %T", field.Interface()))
+}
+
+func validatorPanicOnError(err error) {
+	if err != nil {
+		panic(err.Error())
+	}
+}

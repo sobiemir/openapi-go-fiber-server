@@ -9,5 +9,23 @@ type {{operationId}}_Params struct {
 
 	{{~>misc/nl n=1~}}
 }
+
+func (mdl *{{operationId}}_Params) setDefaultValues() {
+			{{~#each pathParams}}
+				{{~#if defaultValue}}
+	mdl.{{name}} = {{{defaultValue}}}
+				{{~/if~}}
+			{{~/each}}
+			{{~#each queryParams}}
+				{{~#if defaultValue}}
+	mdl.{{name}} = {{{defaultValue}}}
+				{{~/if~}}
+			{{~/each}}
+			{{~#each headerParams}}
+				{{~#if defaultValue}}
+	mdl.{{name}} = {{{defaultValue}}}
+				{{~/if~}}
+			{{~/each}}
+}
 {{~>misc/nl n=2}}
 {{~/or}}

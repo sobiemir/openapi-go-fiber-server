@@ -1,9 +1,29 @@
 package {{modelPackage}}
 
+import "github.com/go-playground/validator/v10"
+
+var validate *validator.Validate = nil
+
 type modelImpl interface {
 	setDefaultValues()
 }
 
 func SetDefaultValues(model modelImpl) {
 	model.setDefaultValues()
+}
+
+func SetValidator(v *validator.Validate) {
+	validate = v
+	RegisterMissingValidators(validate)
+}
+
+func ValidateModel(model modelImpl) error {
+	return GetValidator().Struct(model)
+}
+
+func GetValidator() *validator.Validate {
+	if validate == nil {
+		SetValidator(validator.New())
+	}
+	return validate
 }
